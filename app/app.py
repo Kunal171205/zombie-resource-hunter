@@ -33,8 +33,8 @@ def send_sns_email(data):
     Region: {REGION}
 
     💰 Monthly Waste: ${data['total_waste']:.2f}
-    🖥️ Idle Instances: {len(data['idle_ec2'])} (${data['compute_waste']:.2f})
-    📦 Zombie Volumes: {len(data['zombie_vols'])} (${data['storage_waste']:.2f})
+    🖥️ Idle Instances: {data['idle_ec2_count']} (${data['compute_waste']:.2f})
+    📦 Zombie Volumes: {data['zombie_vols_count']} (${data['storage_waste']:.2f})
     📊 Total Storage: {data['total_gb']} GB
 
     Check the dashboard at: http://13.62.57.253

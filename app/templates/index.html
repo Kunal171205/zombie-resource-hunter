@@ -355,7 +355,7 @@
                 const res = await fetch('/api/scan', { method: 'POST' });
                 if (!res.ok) {
                     const errorData = await res.json();
-                    throw new Error(errorData.error || 'Unknown error');
+                    throw new Error(errorData.message || errorData.error || 'Unknown error');
                 }
                 await fetchHistory();
             } catch (e) {
