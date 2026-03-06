@@ -21,6 +21,7 @@ def get_idle_instances():
     """Finds EC2 instances with average CPU < CPU_THRESHOLD over the last week."""
     idle_instances = []
     try:
+        print(f"Scanning EC2 in region: {REGION}")
         instances = ec2.describe_instances()
         for reservation in instances['Reservations']:
             for instance in reservation['Instances']:
@@ -65,6 +66,7 @@ def get_unattached_volumes():
     zombies = []
     total_gb = 0
     try:
+        print(f"Scanning EBS in region: {REGION}")
         volumes = ec2.describe_volumes(
             Filters=[{"Name": "status", "Values": ["available"]}]
         )["Volumes"]
@@ -85,26 +87,29 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/scan', methods=['POST'])
-def run_scan():
-    idle_ec2 = get_idle_instances()
-    zombie_vols, total_gb = get_unattached_volumes()
-    
-    storage_waste = total_gb * config.EBS_COST_PER_GB_MONTH
-    compute_waste = len(idle_ec2) * config.EC2_IDLE_FIXED_COST
-    total_waste = storage_waste + compute_waste
-    
-    data = {
-        "idle_ec2": idle_ec2,
-        "zombie_vols": zombie_vols,
-        "total_gb": total_gb,
-        "storage_waste": storage_waste,
-        "compute_waste": compute_waste,
-        "total_waste": total_waste,
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    save_scan(data)
-    return jsonify(data)
+    try:
+        idle_ec2 = get_idle_instances()
+        zombie_vols, total_gb = get_unattached_volumes()
+        
+        storage_waste = total_gb * config.EBS_COST_PER_GB_MONTH
+        compute_waste = len(idle_ec2) * config.EC2_IDLE_FIXED_COST
+        total_waste = storage_waste + compute_waste
+        
+        data = {
+            "idle_ec2": idle_ec2,
+            "zombie_vols": zombie_vols,
+            "total_gb": total_gb,
+            "storage_waste": storage_waste,
+            "compute_waste": compute_waste,
+            "total_waste": total_waste,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        save_scan(data)
+        return jsonify(data)
+    except Exception as e:
+        print(f"CRITICAL: Scan failed: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/history')
 def get_scan_history():

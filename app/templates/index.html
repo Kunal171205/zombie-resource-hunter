@@ -308,9 +308,13 @@
 
             try {
                 const res = await fetch('/api/scan', { method: 'POST' });
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Unknown error');
+                }
                 await fetchHistory();
             } catch (e) {
-                alert('Scan failed. Ensure backend is running and AWS credentials are set.');
+                alert(`Scan failed: ${e.message}\n\nPlease check your AWS permissions and Region settings.`);
             } finally {
                 btn.disabled = false;
                 overlay.style.display = 'none';
