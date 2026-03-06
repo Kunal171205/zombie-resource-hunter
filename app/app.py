@@ -87,6 +87,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/scan', methods=['POST'])
+def run_scan():
     try:
         idle_ec2 = get_idle_instances()
         zombie_vols, total_gb = get_unattached_volumes()
