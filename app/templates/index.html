@@ -290,6 +290,17 @@
             </div>
         </div>
 
+        <div class="charts-section" style="margin-top: 20px;">
+            <div class="chart-container">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Resource Count Trend</h3>
+                <canvas id="resourceTrendChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Savings Breakdown</h3>
+                <canvas id="savingsBarChart"></canvas>
+            </div>
+        </div>
+
         <h3 style="margin-bottom: 20px;">Recent Scan History</h3>
         <div class="table-container">
             <table>
@@ -310,16 +321,51 @@
 
         <h3 style="margin-bottom: 20px; margin-top: 40px;">FinOps Knowledge Center</h3>
         <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
-            <div class="stat-card" style="border-left: 4px solid var(--accent-color);">
-                <div class="stat-title">What is a Zombie Resource?</div>
-                <div style="font-size: 0.95rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
-                    <p><b>Idle EC2:</b> Instances with <5% CPU usage over a week. These are often "orphaned" servers
-                            from old projects or abandoned tests.</p>
-                            <p><b>Available EBS:</b> Storage volumes that aren't attached to any server. You pay for
-                                them every second they exist, even if they're empty!</p>
-                </div>
+            <div class="stat-card">
+                <h3 class="stat-title">What is a Zombie?</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    A cloud resource that is "running but idle".
+                    Like a lightbulb left on in an empty room, it wastes money every second it's active.
+                </p>
             </div>
-            <div class="stat-card" style="border-left: 4px solid var(--secondary-accent);">
+            <div class="stat-card">
+                <h3 class="stat-title">Unattached EBS</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    When instances are deleted, their disks (EBS) are often left "Available".
+                    AWS still charges full price! Use "Delete on Termination" to automate.
+                </p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-title">Orphaned Snapshots</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Backups of old, deleted volumes are "ghost" costs.
+                    Clean up snapshots that are older than 30 days if not needed for compliance.
+                </p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-title">Idle Elastic IPs</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    AWS charges a penalty for static IPs that are NOT attached to running servers.
+                    This prevents "camping" on public IP addresses.
+                </p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-title">Zombie ELBs</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Load Balancers with zero healthy targets or zero traffic still cost ~$15/month.
+                    If it has no instances, it's a zombie!
+                </p>
+            </div>
+            <div class="stat-card">
+                <h3 class="stat-title">FinOps Strategy</h3>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                <p>🚀 <b>Upgrade to gp3:</b> Save up to 20% compared to gp2 volumes with better performance.</p>
+                <p>⏰ <b>Schedule Stops:</b> Use "Instance Scheduler" to turn off dev boxes during weekends.</p>
+                <p>📏 <b>Right-sizing:</b> Move oversized instances to smaller families (e.g., from t3.large to
+                    t3.medium).</p>
+                </p>
+            </div>
+            <!-- <div class="stat-card" style="border-left: 4px solid var(--secondary-accent);">
                 <div class="stat-title">Cost Optimization Tips</div>
                 <div style="font-size: 0.95rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
                     <p>🚀 <b>Upgrade to gp3:</b> Save up to 20% compared to gp2 volumes with better performance.</p>
@@ -327,7 +373,7 @@
                     <p>📏 <b>Right-sizing:</b> Move oversized instances to smaller families (e.g., from t3.large to
                         t3.medium).</p>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 
@@ -417,37 +463,37 @@
             updateCharts(history);
         }
 
-        function updateCharts(history) {
-            // SLIDING WINDOW: only show the last 10 scans to prevent the chart from getting crowded
-            const displayHistory = history.length > 10 ? history.slice(-10) : history;
+        function updateCharts(data) {
+            const ctxHistory = document.getElementById('historyChart').getContext('2d');
+            const ctxDist = document.getElementById('distChart').getContext('2d');
+            const ctxResource = document.getElementById('resourceTrendChart').getContext('2d');
+            const ctxSavings = document.getElementById('savingsBarChart').getContext('2d');
 
-            const labels = displayHistory.map(h => {
-                const d = new Date(h.timestamp);
-                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            });
-            const wasteData = displayHistory.map(h => h.total_waste);
+            // Apply Sliding Window (Last 10 scans)
+            const windowData = data.length > 10 ? data.slice(-10) : data;
+            const labels = windowData.map(d => new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            const wastes = windowData.map(d => d.total_waste);
 
-            // 1. Handle History Line Chart
-            if (historyChart) {
-                historyChart.destroy();
-            }
+            const idleEc2Counts = windowData.map(d => d.idle_ec2_count);
+            const zombieVolCounts = windowData.map(d => d.zombie_vols_count);
 
-            const ctx1 = document.getElementById('historyChart').getContext('2d');
-            historyChart = new Chart(ctx1, {
+            const latest = windowData[windowData.length - 1];
+
+            // 1. Waste History Chart
+            if (historyChart) historyChart.destroy();
+            historyChart = new Chart(ctxHistory, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Total Waste ($)',
-                        data: wasteData,
+                        label: 'Total Monthly Waste ($)',
+                        data: wastes,
                         borderColor: '#00f2ff',
                         backgroundColor: 'rgba(0, 242, 255, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.3,
                         fill: true,
-                        pointBackgroundColor: '#00f2ff',
-                        pointHoverRadius: 7,
-                        pointRadius: 4
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
@@ -485,28 +531,46 @@
                 }
             });
 
-            // 2. Handle Distribution Doughnut Chart
-            const latest = history[history.length - 1];
-            if (distChart) {
-                distChart.destroy();
-            }
+            // 2. Resource Trend Chart
+            if (resourceChart) resourceChart.destroy();
+            resourceChart = new Chart(ctxResource, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Idle EC2',
+                            data: idleEc2Counts,
+                            borderColor: '#7000ff',
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'Zombie Volumes',
+                            data: zombieVolCounts,
+                            borderColor: '#00f2ff',
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
 
-            const ctx2 = document.getElementById('distChart').getContext('2d');
-
-            // Clear if no waste
-            if (latest.compute_waste === 0 && latest.storage_waste === 0) {
-                ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
-                ctx2.font = "16px Outfit";
-                ctx2.fillStyle = "#a0a0b0";
-                ctx2.textAlign = "center";
-                ctx2.fillText("No waste detected", ctx2.canvas.width / 2, ctx2.canvas.height / 2);
-                return;
-            }
-
-            distChart = new Chart(ctx2, {
+            // 3. Waste Distribution (Doughnut)
+            if (distChart) distChart.destroy();
+            distChart = new Chart(ctxDist, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Compute', 'Storage'],
+                    labels: ['Compute Waste', 'Storage Waste'],
                     datasets: [{
                         data: [latest.compute_waste, latest.storage_waste],
                         backgroundColor: ['#7000ff', '#00f2ff'],
@@ -517,26 +581,39 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        animateRotate: true
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#a0a0b0',
-                                padding: 20,
-                                font: { family: 'Outfit', size: 12 }
-                            }
+                    cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff', padding: 20 } } }
+                }
+            });
+
+            // 4. Savings Breakdown (Bar)
+            if (savingsChart) savingsChart.destroy();
+            savingsChart = new Chart(ctxSavings, {
+                type: 'bar',
+                data: {
+                    labels: ['Latest Scan'],
+                    datasets: [
+                        {
+                            label: 'Compute ($)',
+                            data: [latest.compute_waste],
+                            backgroundColor: '#7000ff',
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => ` $${context.raw.toFixed(2)}`
-                            }
+                        {
+                            label: 'Storage ($)',
+                            data: [latest.storage_waste],
+                            backgroundColor: '#00f2ff',
                         }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, beginAtZero: true, grid: { display: false } },
+                        y: { stacked: true, grid: { display: false } }
                     },
-                    cutout: '75%'
+                    plugins: { legend: { display: false } }
                 }
             });
         }
