@@ -285,6 +285,51 @@
                 </tbody>
             </table>
         </div>
+
+        <h3 style="margin-bottom: 20px; margin-top: 40px;">FinOps Knowledge Center</h3>
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+            <div class="stat-card" style="border-left: 4px solid var(--accent-color);">
+                <div class="stat-title">What is a Zombie Resource?</div>
+                <div style="font-size: 0.95rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
+                    <p><b>Idle EC2:</b> Instances with <5% CPU usage over a week. These are often "orphaned" servers
+                            from old projects or abandoned tests.</p>
+                            <p><b>Available EBS:</b> Storage volumes that aren't attached to any server. You pay for
+                                them every second they exist, even if they're empty!</p>
+                </div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid var(--secondary-accent);">
+                <div class="stat-title">Cost Optimization Tips</div>
+                <div style="font-size: 0.95rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
+                    <p>🚀 <b>Upgrade to gp3:</b> Save up to 20% compared to gp2 volumes with better performance.</p>
+                    <p>⏰ <b>Schedule Stops:</b> Use "Instance Scheduler" to turn off dev boxes during weekends.</p>
+                    <p>📏 <b>Right-sizing:</b> Move oversized instances to smaller families (e.g., from t3.large to
+                        t3.medium).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="margin-bottom: 20px; margin-top: 40px;">FinOps Knowledge Center</h3>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+        <div class="stat-card">
+            <div class="stat-title">What is a Zombie Resource?</div>
+            <div style="font-size: 0.9rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
+                <p><b>Idle EC2:</b> Instances with <5% CPU usage over 7 days. These are often "orphaned" servers from
+                        old projects.</p>
+                        <p><b>Available EBS:</b> Storage volumes that aren't attached to any server but are still
+                            costing money every month.</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Cost Optimization Tips</div>
+            <div style="font-size: 0.9rem; margin-top: 15px; line-height: 1.6; color: var(--text-secondary);">
+                <p>🚀 <b>Upgrade to gp3:</b> Save up to 20% compared to gp2 volumes.</p>
+                <p>⏰ <b>Schedule Stop:</b> Turn off dev instances during non-business hours.</p>
+                <p>📏 <b>Right-sizing:</b> Downsize instances that never peak above 40% CPU.</p>
+            </div>
+        </div>
+    </div>
+    </div>
     </div>
 
     <script>
@@ -374,10 +419,19 @@
         }
 
         function updateCharts(history) {
-            const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-            const wasteData = history.map(h => h.total_waste);
+            // SLIDING WINDOW: only show the last 10 scans to prevent the chart from getting crowded
+            const displayHistory = history.length > 10 ? history.slice(-10) : history;
 
-            if (historyChart) historyChart.destroy();
+            const labels = displayHistory.map(h => {
+                const d = new Date(h.timestamp);
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            });
+            const wasteData = displayHistory.map(h => h.total_waste);
+
+            // 1. Handle History Line Chart
+            if (historyChart) {
+                historyChart.destroy();
+            }
 
             const ctx1 = document.getElementById('historyChart').getContext('2d');
             historyChart = new Chart(ctx1, {
@@ -390,21 +444,39 @@
                         borderColor: '#00f2ff',
                         backgroundColor: 'rgba(0, 242, 255, 0.1)',
                         borderWidth: 3,
-                        tension: 0.4,
+                        tension: 0.3,
                         fill: true,
                         pointBackgroundColor: '#00f2ff',
-                        pointRadius: 5
+                        pointHoverRadius: 7,
+                        pointRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1a1c23',
+                            titleFont: { family: 'Outfit', size: 14 },
+                            bodyFont: { family: 'Outfit', size: 13 },
+                            padding: 12,
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#a0a0b0' }
+                            ticks: {
+                                color: '#a0a0b0',
+                                callback: value => '$' + value.toFixed(2)
+                            }
                         },
                         x: {
                             grid: { display: false },
@@ -414,21 +486,24 @@
                 }
             });
 
+            // 2. Handle Distribution Doughnut Chart
             const latest = history[history.length - 1];
-            if (distChart) distChart.destroy();
+            if (distChart) {
+                distChart.destroy();
+            }
 
-            // Don't render distribution chart if there is no waste
+            const ctx2 = document.getElementById('distChart').getContext('2d');
+
+            // Clear if no waste
             if (latest.compute_waste === 0 && latest.storage_waste === 0) {
-                const ctx2 = document.getElementById('distChart').getContext('2d');
                 ctx2.clearRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
-                ctx2.font = "14px Outfit";
+                ctx2.font = "16px Outfit";
                 ctx2.fillStyle = "#a0a0b0";
                 ctx2.textAlign = "center";
                 ctx2.fillText("No waste detected", ctx2.canvas.width / 2, ctx2.canvas.height / 2);
                 return;
             }
 
-            const ctx2 = document.getElementById('distChart').getContext('2d');
             distChart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
@@ -437,19 +512,32 @@
                         data: [latest.compute_waste, latest.storage_waste],
                         backgroundColor: ['#7000ff', '#00f2ff'],
                         borderWidth: 0,
-                        hoverOffset: 10
+                        hoverOffset: 15
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000,
+                        animateRotate: true
+                    },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: '#a0a0b0', padding: 20 }
+                            labels: {
+                                color: '#a0a0b0',
+                                padding: 20,
+                                font: { family: 'Outfit', size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` $${context.raw.toFixed(2)}`
+                            }
                         }
                     },
-                    cutout: '70%'
+                    cutout: '75%'
                 }
             });
         }
