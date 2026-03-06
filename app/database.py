@@ -41,8 +41,8 @@ def save_scan(data):
         data['storage_waste'],
         data['compute_waste'],
         data['total_gb'],
-        len(data['idle_ec2']),
-        len(data['zombie_vols']),
+        data['idle_ec2_count'],
+        data['zombie_vols_count'],
         data.get('total_instances_checked', 0),
         json.dumps(data)
     ))
