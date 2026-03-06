@@ -9,20 +9,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #08090b;
-            --card-bg: rgba(26, 28, 35, 0.7);
-            --accent-color: #00f2ff;
-            --secondary-accent: #7000ff;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
-            --danger: #ff4d4d;
-            --success: #00ff88;
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --accent-color: #007bff;
+            --secondary-accent: #6610f2;
+            --text-primary: #1a1c23;
+            --text-secondary: #64748b;
+            --danger: #dc3545;
+            --success: #28a745;
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: radial-gradient(circle at top right, #16181d, var(--bg-color));
+            background: var(--bg-color);
             color: var(--text-primary);
             margin: 0;
             padding: 0;
@@ -86,12 +88,17 @@
         .stat-card {
             background: var(--card-bg);
             padding: 24px;
-            border-radius: 24px;
+            border-radius: 20px;
             border: 1px solid var(--glass-border);
-            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-sm);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
         }
 
         .stat-card::before {
@@ -108,7 +115,7 @@
         .stat-card:hover {
             border-color: var(--accent-color);
             transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
         .stat-title {
@@ -165,7 +172,8 @@
             background: var(--card-bg);
             border-radius: 20px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-sm);
         }
 
         table {
@@ -176,7 +184,7 @@
         th {
             text-align: left;
             padding: 16px;
-            background: rgba(255, 255, 255, 0.03);
+            background: #f8fafc;
             color: var(--text-secondary);
             font-weight: 600;
             font-size: 0.85rem;
@@ -184,7 +192,7 @@
 
         td {
             padding: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid #f1f5f9;
         }
 
         .status-badge {
@@ -210,7 +218,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(13, 14, 18, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             display: none;
             justify-content: center;
             align-items: center;
@@ -488,12 +496,12 @@
                     datasets: [{
                         label: 'Total Monthly Waste ($)',
                         data: wastes,
-                        borderColor: '#00f2ff',
-                        backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.05)',
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 5,
-                        pointHoverRadius: 8
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -506,26 +514,26 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#1a1c23',
-                            titleFont: { family: 'Outfit', size: 14 },
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: 'Outfit', size: 14, weight: '600' },
                             bodyFont: { family: 'Outfit', size: 13 },
                             padding: 12,
-                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderColor: 'rgba(0,0,0,0.1)',
                             borderWidth: 1
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            grid: { color: '#f1f5f9' },
                             ticks: {
-                                color: '#a0a0b0',
+                                color: '#64748b',
                                 callback: value => '$' + value.toFixed(2)
                             }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#a0a0b0' }
+                            ticks: { color: '#64748b' }
                         }
                     }
                 }
@@ -541,14 +549,14 @@
                         {
                             label: 'Idle EC2',
                             data: idleEc2Counts,
-                            borderColor: '#7000ff',
+                            borderColor: '#6610f2',
                             tension: 0.4,
                             fill: false
                         },
                         {
                             label: 'Zombie Volumes',
                             data: zombieVolCounts,
-                            borderColor: '#00f2ff',
+                            borderColor: '#007bff',
                             tension: 0.4,
                             fill: false
                         }
@@ -573,7 +581,7 @@
                     labels: ['Compute Waste', 'Storage Waste'],
                     datasets: [{
                         data: [latest.compute_waste, latest.storage_waste],
-                        backgroundColor: ['#7000ff', '#00f2ff'],
+                        backgroundColor: ['#6610f2', '#007bff'],
                         borderWidth: 0,
                         hoverOffset: 15
                     }]
@@ -596,12 +604,12 @@
                         {
                             label: 'Compute ($)',
                             data: [latest.compute_waste],
-                            backgroundColor: '#7000ff',
+                            backgroundColor: '#6610f2',
                         },
                         {
                             label: 'Storage ($)',
                             data: [latest.storage_waste],
-                            backgroundColor: '#00f2ff',
+                            backgroundColor: '#007bff',
                         }
                     ]
                 },
