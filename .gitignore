@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Sensitive files
+*.pem
+
+# Database
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db

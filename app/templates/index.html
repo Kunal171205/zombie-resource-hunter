@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Resource Hunter | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #1a1c23;
+            --accent-color: #00f2ff;
+            --secondary-accent: #7000ff;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --danger: #ff4d4d;
+            --success: #00ff88;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-scan {
+            background: linear-gradient(45deg, var(--accent-color), var(--secondary-accent));
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-scan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 255, 0.5);
+        }
+
+        .btn-scan:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-color);
+        }
+
+        .stat-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-delta {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .delta-positive {
+            color: var(--danger);
+        }
+
+        .delta-negative {
+            color: var(--success);
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        td {
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-zombie {
+            background: rgba(255, 77, 77, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-safe {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--success);
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 14, 18, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid var(--accent-color);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loadingOverlay">
+        <span class="loader"></span>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Zombie Resource Hunter</h1>
+                <p style="color: var(--text-secondary); margin-top: 5px;">FinOps Dashboard & Usage History</p>
+            </div>
+            <button class="btn-scan" onclick="triggerScan()" id="scanBtn">New Scan</button>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Monthly Waste</div>
+                <div class="stat-value" id="currentWaste">$0.00</div>
+                <div class="stat-delta" id="wasteDelta">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Idle Instaces</div>
+                <div class="stat-value" id="idleCount">0</div>
+                <div class="stat-delta">Compute Savings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Zombie Volumes</div>
+                <div class="stat-value" id="zombieCount">0</div>
+                <div class="stat-delta">Storage Savings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Wasted Storage</div>
+                <div class="stat-value" id="totalGb">0 GB</div>
+                <div class="stat-delta">EBS gp3/gp2</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Waste History vs. Current</h3>
+                <canvas id="historyChart" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3 style="margin-top: 0; margin-bottom: 20px;">Waste Distribution</h3>
+                <canvas id="distChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px;">Recent Scan History</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Total Waste</th>
+                        <th>Compute</th>
+                        <th>Storage</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable">
+                    <!-- Rows will be added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let historyChart, distChart;
+
+        async function initDashboard() {
+            await fetchHistory();
+        }
+
+        async function fetchHistory() {
+            const res = await fetch('/api/history');
+            const history = await res.json();
+            updateUI(history);
+        }
+
+        async function triggerScan() {
+            const btn = document.getElementById('scanBtn');
+            const overlay = document.getElementById('loadingOverlay');
+
+            btn.disabled = true;
+            overlay.style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/scan', { method: 'POST' });
+                await fetchHistory();
+            } catch (e) {
+                alert('Scan failed. Ensure backend is running and AWS credentials are set.');
+            } finally {
+                btn.disabled = false;
+                overlay.style.display = 'none';
+            }
+        }
+
+        function updateUI(history) {
+            if (history.length === 0) return;
+
+            const latest = history[history.length - 1];
+            const previous = history.length > 1 ? history[history.length - 2] : null;
+
+            // Update Stats
+            document.getElementById('currentWaste').textContent = `$${latest.total_waste.toFixed(2)}`;
+            document.getElementById('idleCount').textContent = latest.idle_ec2_count;
+            document.getElementById('zombieCount').textContent = latest.zombie_vols_count;
+            document.getElementById('totalGb').textContent = `${latest.total_gb} GB`;
+
+            if (previous) {
+                const delta = latest.total_waste - previous.total_waste;
+                const deltaEl = document.getElementById('wasteDelta');
+                if (delta > 0) {
+                    deltaEl.textContent = `+$${delta.toFixed(2)} vs last scan`;
+                    deltaEl.className = 'stat-delta delta-positive';
+                } else if (delta < 0) {
+                    deltaEl.textContent = `-$${Math.abs(delta).toFixed(2)} vs last scan`;
+                    deltaEl.className = 'stat-delta delta-negative';
+                } else {
+                    deltaEl.textContent = 'No change';
+                    deltaEl.className = 'stat-delta';
+                }
+            }
+
+            // Update History Table
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+            [...history].reverse().forEach(scan => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(scan.timestamp).toLocaleString()}</td>
+                    <td style="font-weight: 600;">$${scan.total_waste.toFixed(2)}</td>
+                    <td>$${scan.compute_waste.toFixed(2)}</td>
+                    <td>$${scan.storage_waste.toFixed(2)}</td>
+                    <td><span class="status-badge ${scan.total_waste > 0 ? 'badge-zombie' : 'badge-safe'}">
+                        ${scan.total_waste > 0 ? 'Action Recommended' : 'Optimized'}
+                    </span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update Charts
+            updateCharts(history);
+        }
+
+        function updateCharts(history) {
+            const labels = history.map(h => new Date(h.timestamp).toLocaleDateString() + ' ' + new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            const wasteData = history.map(h => h.total_waste);
+
+            if (historyChart) historyChart.destroy();
+
+            const ctx1 = document.getElementById('historyChart').getContext('2d');
+            historyChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Waste ($)',
+                        data: wasteData,
+                        borderColor: '#00f2ff',
+                        backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#00f2ff',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#a0a0b0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#a0a0b0' }
+                        }
+                    }
+                }
+            });
+
+            const latest = history[history.length - 1];
+            if (distChart) distChart.destroy();
+            const ctx2 = document.getElementById('distChart').getContext('2d');
+            distChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Compute', 'Storage'],
+                    datasets: [{
+                        data: [latest.compute_waste, latest.storage_waste],
+                        backgroundColor: ['#7000ff', '#00f2ff'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#a0a0b0', padding: 20 }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        window.onload = initDashboard;
+    </script>
+</body>
+
+</html>
