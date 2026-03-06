@@ -11,7 +11,8 @@ class MongoDBHandler:
         
         if self.uri:
             try:
-                self.client = MongoClient(self.uri)
+                # Add a 5 second timeout to avoid hanging the entire app if Atlas is unreachable
+                self.client = MongoClient(self.uri, serverSelectionTimeoutMS=5000)
                 self.db = self.client['zombie_hunter']
                 self.collection = self.db['scans']
                 print("MongoDB: Connected successfully.")

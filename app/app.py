@@ -176,10 +176,16 @@ def get_history_api():
     
     # Fallback to local SQLite if cloud is empty
     if not history:
-        from database import get_history as get_scans_history # Renamed to avoid conflict with global get_history
+        from database import get_history as get_scans_history
         history = get_scans_history()
         
     return jsonify(history)
+
+
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint to verify server is running."""
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
 if __name__ == '__main__':
     init_db()

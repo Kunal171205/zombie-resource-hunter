@@ -132,5 +132,20 @@ Instead of just running it manually, we'll create a "Service" so it restarts aut
 
 ## Phase 5: Verification
 1.  Copy the **Public IPv4 address** of your instance from the EC2 Console.
-2.  Paste it into your browser: `http://<your-ip>`.
+2.  Paste it into your browser: `http://<your-ip>
+(venv) [ec2-user@ip-172-31-21-166 zombie-resource-hunter]$ cat /etc/systemd/system/zombie-hunter.service
+[Unit]
+Description=Zombie Resource Hunter Flask App
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user/zombie-resource-hunter/app
+Environment="PATH=/home/ec2-user/zombie-resource-hunter/venv/bin"
+Environment="AWS_DEFAULT_REGION=us-east-1"
+ExecStart=/home/ec2-user/zombie-resource-hunter/venv/bin/python app.py
+
+[Install]
+WantedBy=multi-user.target
+(venv) [ec2-user@ip-172-31-21-166 zombie-resource-hunter]$`.
 3.  **Done!** Your dashboard is now live and persistent.
