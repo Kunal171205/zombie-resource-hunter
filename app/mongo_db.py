@@ -20,7 +20,7 @@ class MongoDBHandler:
 
     def save_scan(self, data):
         """Saves scan results to MongoDB Atlas."""
-        if not self.collection:
+        if self.collection is None:
             print("MongoDB Alert: No connection. Skipping save.")
             return False
             
@@ -39,7 +39,7 @@ class MongoDBHandler:
 
     def get_history(self, limit=50):
         """Retrieves scan history from MongoDB."""
-        if not self.collection:
+        if self.collection is None:
             print("MongoDB Alert: No connection. Returning empty history.")
             return []
             
