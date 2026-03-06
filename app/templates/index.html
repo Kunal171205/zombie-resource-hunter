@@ -9,22 +9,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0d0e12;
-            --card-bg: #1a1c23;
+            --bg-color: #08090b;
+            --card-bg: rgba(26, 28, 35, 0.7);
             --accent-color: #00f2ff;
             --secondary-accent: #7000ff;
             --text-primary: #ffffff;
             --text-secondary: #a0a0b0;
             --danger: #ff4d4d;
             --success: #00ff88;
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
+            background: radial-gradient(circle at top right, #16181d, var(--bg-color));
             color: var(--text-primary);
             margin: 0;
             padding: 0;
+            min-height: 100vh;
             overflow-x: hidden;
         }
 
@@ -84,13 +86,29 @@
         .stat-card {
             background: var(--card-bg);
             padding: 24px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: border-color 0.3s;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+            pointer-events: none;
         }
 
         .stat-card:hover {
             border-color: var(--accent-color);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
         }
 
         .stat-title {
@@ -134,9 +152,13 @@
 
         .chart-container {
             background: var(--card-bg);
-            padding: 24px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 28px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            position: relative;
+            height: 380px;
+            /* ADD THIS */
         }
 
         .table-container {
@@ -228,7 +250,7 @@
         <header>
             <div>
                 <h1>Zombie Resource Hunter</h1>
-                <p style="color: var(--text-secondary); margin-top: 5px;" id="scanStatus">FinOps Dashboard & Usage
+                <p style="color: var(--text-secondary); margin-top: 8px;" id="scanStatus">FinOps Dashboard & Usage
                     History</p>
             </div>
             <button class="btn-scan" onclick="triggerScan()" id="scanBtn">New Scan</button>
@@ -260,11 +282,11 @@
         <div class="charts-section">
             <div class="chart-container">
                 <h3 style="margin-top: 0; margin-bottom: 20px;">Waste History vs. Current</h3>
-                <canvas id="historyChart" height="300"></canvas>
+                <canvas id="historyChart"></canvas>
             </div>
             <div class="chart-container">
                 <h3 style="margin-top: 0; margin-bottom: 20px;">Waste Distribution</h3>
-                <canvas id="distChart" height="300"></canvas>
+                <canvas id="distChart"></canvas>
             </div>
         </div>
 
