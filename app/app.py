@@ -121,37 +121,57 @@ def get_unattached_volumes():
 def index():
     return render_template('index.html')
 
+from mongo_db import mongo_handler
+from s3_storage import s3_storage
+
 @app.route('/api/scan', methods=['POST'])
 def run_scan():
+    """Triggers a resource scan and saves results to Cloud + Local DB."""
     try:
-        idle_ec2, total_instances_checked = get_idle_instances()
-        zombie_vols, total_gb = get_unattached_volumes()
-        
-        storage_waste = total_gb * config.EBS_COST_PER_GB_MONTH
-        compute_waste = len(idle_ec2) * config.EC2_IDLE_FIXED_COST
-        total_waste = storage_waste + compute_waste
+        results, total_checked = get_idle_instances()
         
         data = {
-            "idle_ec2": idle_ec2,
-            "zombie_vols": zombie_vols,
-            "total_gb": total_gb,
-            "total_instances_checked": total_instances_checked,
-            "storage_waste": storage_waste,
-            "compute_waste": compute_waste,
-            "total_waste": total_waste,
-            "timestamp": datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'total_waste': results['total_waste'],
+            'compute_waste': results['ec2_waste'],
+            'storage_waste': results['ebs_waste'],
+            'idle_ec2_count': results['idle_count'],
+            'zombie_vols_count': results['zombie_vols'],
+            'total_gb': results['total_gb'],
+            'total_instances_checked': total_checked
         }
+
+        # 1. Save to MongoDB Atlas (Cloud DB)
+        saved_to_cloud = mongo_handler.save_scan(data)
         
+        # 2. Upload detailed report to S3
+        s3_storage.upload_report(data)
+        
+        # 3. Local Backup (SQLite)
         save_scan(data)
+
+        # 4. Send Alerts
         send_sns_email(data)
-        return jsonify(data)
+
+        msg = f"Scan complete! Region: {app.config.get('AWS_DEFAULT_REGION', REGION)}. " # Use REGION if app.config not set
+        if saved_to_cloud:
+            msg += "Results synced to MongoDB Atlas."
+        
+        return jsonify({"status": "success", "message": msg, "data": data})
     except Exception as e:
-        print(f"CRITICAL: Scan failed: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Scan Error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/history')
 def get_scan_history():
-    history = get_history()
+    """Retrieves history, prioritizing MongoDB Atlas."""
+    history = mongo_handler.get_history()
+    
+    # Fallback to local SQLite if cloud is empty
+    if not history:
+        from database import get_history as get_scans_history # Renamed to avoid conflict with global get_history
+        history = get_scans_history()
+        
     return jsonify(history)
 
 if __name__ == '__main__':
