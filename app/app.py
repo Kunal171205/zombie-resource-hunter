@@ -20,6 +20,7 @@ sns = boto3.client('sns', region_name=REGION)
 
 def send_sns_email(data):
     """Sends a scan summary email via SNS."""
+    print(f"DEBUG: Checking SNS configuration... ARN found: {config.SNS_TOPIC_ARN[:15]}...")
     if not config.SNS_TOPIC_ARN:
         print("SNS Alert: No Topic ARN configured. Skipping email.")
         return
