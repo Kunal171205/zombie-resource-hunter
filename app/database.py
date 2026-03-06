@@ -19,6 +19,7 @@ def init_db():
             total_gb REAL,
             idle_ec2_count INTEGER,
             zombie_vols_count INTEGER,
+            total_instances_checked INTEGER,
             raw_data TEXT
         )
     ''')
@@ -33,8 +34,8 @@ def save_scan(data):
     cursor.execute('''
         INSERT INTO scans (
             total_waste, storage_waste, compute_waste, total_gb, 
-            idle_ec2_count, zombie_vols_count, raw_data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            idle_ec2_count, zombie_vols_count, total_instances_checked, raw_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data['total_waste'],
         data['storage_waste'],
@@ -42,6 +43,7 @@ def save_scan(data):
         data['total_gb'],
         len(data['idle_ec2']),
         len(data['zombie_vols']),
+        data.get('total_instances_checked', 0),
         json.dumps(data)
     ))
     

@@ -52,11 +52,13 @@ def send_sns_email(data):
 def get_idle_instances():
     """Finds EC2 instances with average CPU < CPU_THRESHOLD over the last week."""
     idle_instances = []
+    total_found = 0
     try:
         print(f"Scanning EC2 in region: {REGION}")
         instances = ec2.describe_instances()
         for reservation in instances['Reservations']:
             for instance in reservation['Instances']:
+                total_found += 1
                 instance_id = instance['InstanceId']
                 state = instance['State']['Name']
 
@@ -91,7 +93,7 @@ def get_idle_instances():
     except Exception as e:
         print(f"Error fetching EC2 metrics: {e}")
     
-    return idle_instances
+    return idle_instances, total_found
 
 def get_unattached_volumes():
     """Finds EBS volumes in 'available' state."""
@@ -121,7 +123,7 @@ def index():
 @app.route('/api/scan', methods=['POST'])
 def run_scan():
     try:
-        idle_ec2 = get_idle_instances()
+        idle_ec2, total_instances_checked = get_idle_instances()
         zombie_vols, total_gb = get_unattached_volumes()
         
         storage_waste = total_gb * config.EBS_COST_PER_GB_MONTH
@@ -132,6 +134,7 @@ def run_scan():
             "idle_ec2": idle_ec2,
             "zombie_vols": zombie_vols,
             "total_gb": total_gb,
+            "total_instances_checked": total_instances_checked,
             "storage_waste": storage_waste,
             "compute_waste": compute_waste,
             "total_waste": total_waste,
