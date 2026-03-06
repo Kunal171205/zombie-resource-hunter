@@ -63,6 +63,14 @@ Once connected and updated, the user can verify their environment with:
 - `python3 --version`
 - `git --version`
 
+## 6. Troubleshooting: Missing `iptables` on AL2023
+
+Amazon Linux 2023 (AL2023) does not include `iptables` by default as it prioritizes `nftables`.
+
+**Resolution:**
+- Instructed the user to install `iptables` using `sudo dnf install iptables -y`.
+- Once installed, the port forwarding command will work as expected.
+
 ## Phase 3: Deploying the Application
 
 ### 3.1 Clone and Setup

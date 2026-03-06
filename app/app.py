@@ -16,6 +16,38 @@ app = Flask(__name__)
 REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
 ec2 = boto3.client('ec2', region_name=REGION)
 cloudwatch = boto3.client('cloudwatch', region_name=REGION)
+sns = boto3.client('sns', region_name=REGION)
+
+def send_sns_email(data):
+    """Sends a scan summary email via SNS."""
+    if not config.SNS_TOPIC_ARN:
+        print("SNS Alert: No Topic ARN configured. Skipping email.")
+        return
+
+    subject = "🚀 Zombie Resource Hunter: Scan Report"
+    body = f"""
+    Zombie Resource Hunter Scan Results
+    -----------------------------------
+    Timestamp: {data['timestamp']}
+    Region: {REGION}
+
+    💰 Monthly Waste: ${data['total_waste']:.2f}
+    🖥️ Idle Instances: {len(data['idle_ec2'])} (${data['compute_waste']:.2f})
+    📦 Zombie Volumes: {len(data['zombie_vols'])} (${data['storage_waste']:.2f})
+    📊 Total Storage: {data['total_gb']} GB
+
+    Check the dashboard at: http://13.62.57.253
+    """
+
+    try:
+        sns.publish(
+            TopicArn=config.SNS_TOPIC_ARN,
+            Message=body,
+            Subject=subject
+        )
+        print("SNS Alert: Email sent successfully.")
+    except Exception as e:
+        print(f"SNS Alert Error: {e}")
 
 def get_idle_instances():
     """Finds EC2 instances with average CPU < CPU_THRESHOLD over the last week."""
@@ -107,6 +139,7 @@ def run_scan():
         }
         
         save_scan(data)
+        send_sns_email(data)
         return jsonify(data)
     except Exception as e:
         print(f"CRITICAL: Scan failed: {e}")

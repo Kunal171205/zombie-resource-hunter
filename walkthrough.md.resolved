@@ -1,0 +1,57 @@
+# EC2 Deployment Phase 2 Walkthrough
+
+This walkthrough covers the detailed steps explained to the user for connecting to their EC2 instance and preparing the server environment.
+
+## 1. Connecting via SSH (Windows)
+
+The user was guided to use PowerShell or Command Prompt to connect to their instance:
+
+```powershell
+ssh -i "C:\path\to\your-key.pem" ec2-user@<Your-Public-IP>
+```
+
+**Key Explanation Point:**
+- `ec2-user` is the default username for Amazon Linux.
+- The path to the `.pem` file must be correct and often requires quotes if there are spaces.
+
+## 2. Server Preparation
+
+The user was instructed to run the following update and installation commands:
+
+```bash
+# Update the system software
+sudo dnf update -y
+
+# Install Python 3 and Git
+sudo dnf install -y python3-pip git
+```
+
+## 4. GitHub Integration
+
+The user's code was successfully pushed to their new GitHub repository:
+`https://github.com/Kunal171205/zombie-resource-hunter.git`
+
+This allows the user to easily clone the code onto their EC2 instance using:
+```bash
+git clone https://github.com/Kunal171205/zombie-resource-hunter.git
+```
+
+## 6. Phase 4: Production Setup Success
+
+The application was successfully configured as a `systemd` service:
+- **Service Name:** `zombie-hunter.service`
+- **Working Directory:** `/home/ec2-user/zombie-resource-hunter/app`
+- **Host Binding:** Updated to `0.0.0.0` to allow external access.
+
+## 7. Troubleshooting: Flask Host Binding
+
+Initially, the app was only listening on `127.0.0.1`. 
+- **Fix:** Updated `app.run` in [app.py](file:///c:/Users/user/Downloads/cloud%20Project/app/app.py) to use `host='0.0.0.0'`.
+- **Outcome:** Service now correctly accepts redirected traffic from Port 80.
+
+## 8. Final Verification
+
+The dashboard is now live and persistent at:
+`http://13.62.57.253`
+
+The deployment is complete.🚀
