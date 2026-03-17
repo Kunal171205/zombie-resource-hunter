@@ -37,7 +37,7 @@ def send_sns_email(data):
     📦 Zombie Volumes: {data['zombie_vols_count']} (${data['storage_waste']:.2f})
     📊 Total Storage: {data['total_gb']} GB
 
-    Check the dashboard at: http://13.60.76.90
+    Check the dashboard at: http://13.62.224.178
     """
 
     try:

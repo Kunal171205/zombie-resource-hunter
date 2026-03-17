@@ -55,7 +55,7 @@ The user encountered an error: `ssh: Could not resolve hostname <...>: No such h
 
 **Resolution:**
 - Explained that angle brackets `< >` are placeholders and must be removed from the final command.
-- Provided the corrected command format: `ec2-user@13.60.76.90`.
+- Provided the corrected command format: `ec2-user@13.62.224.178`.
 
 ## 4. Verification
 
